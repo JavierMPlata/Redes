@@ -9,52 +9,68 @@ public class ServidorUDP {
 
     public static void main(String[] args) {
 
+        // Arreglo de bytes para almacenar los datos recibidos
         byte[] bufer = new byte[1024];
-        StringBuilder receivedMessages = new StringBuilder(); // Added StringBuilder to concatenate messages
-        int messageCount = 0; // Added counter for received messages
 
-        //Sentencia de control de errores
+        // StringBuilder para concatenar los mensajes recibidos
+        StringBuilder receivedMessages = new StringBuilder(); // Se agrega un StringBuilder para concatenar mensajes
+
+        // Contador para contar los mensajes recibidos
+        int messageCount = 0; // Se agrega un contador para los mensajes recibidos
+
+        // Sentencia de control de errores
         try {
 
+            // Imprime un mensaje indicando que el servidor UDP ha iniciado
             System.out.println("Servidor UDP iniciado" );
+
+            // Indica que el servidor está esperando a un cliente
             System.out.println("En espera de un cliente");
 
-            //Creacion del socket
+            // Creación del socket UDP en el puerto 9107
             DatagramSocket socketUDP = new DatagramSocket(9107);
 
-            //Siempre atendera peticiones
+            // Bucle para atender siempre las peticiones entrantes
             while (true) {
 
-                // Construimos el DatagramPacket para recibir peticiones
+                // Construcción del DatagramPacket para recibir peticiones
                 DatagramPacket peticion = new DatagramPacket(bufer, bufer.length);
 
                 // Leemos una petición del DatagramSocket
                 socketUDP.receive(peticion);
 
-                // Muestro datos captados por el servidor en DatagramSocket
-                System.out.println("Recibo la informacion de un cliente");
+                // Muestra información sobre el cliente que envía el mensaje
+                System.out.println("Recibo la información de un cliente");
                 System.out.println("Ip origen " + peticion.getAddress());
                 System.out.println("Puerto origen: " + peticion.getPort());
 
+                // Convertimos los datos recibidos a una cadena de texto
                 String message = new String(peticion.getData(), 0, peticion.getLength());
-                receivedMessages.append(message).append(" "); // Append each message to the StringBuilder
-                System.out.println("Mensaje :" + message);
 
-                messageCount++; // Increment the counter
+                // Añadimos el mensaje recibido al StringBuilder
+                receivedMessages.append(message).append(" "); // Agregar cada mensaje al StringBuilder
+                System.out.println("Mensaje: " + message);
 
-                if (messageCount >= 5) { // Break the loop after receiving 5 messages
+                // Incrementamos el contador de mensajes recibidos
+                messageCount++; // Incrementar el contador
+
+                // Si se han recibido 5 mensajes, salimos del bucle
+                if (messageCount >= 5) { // Salir del bucle después de recibir 5 mensajes
                     break;
                 }
 
+                // Muestra un mensaje indicando que el servidor está esperando a un cliente
                 System.out.print("Servidor  UDP en espera de un cliente \n");
             }
 
-            // Print all messages after receiving all of them
-            System.out.println("Received messages: " + receivedMessages.toString());
+            // Imprime todos los mensajes recibidos después de haberlos recibido todos
+            System.out.println("Mensajes recibidos: " + receivedMessages.toString());
 
         } catch (SocketException e) {
+            // Captura y maneja la excepción de SocketException, en caso de que ocurra al crear el socket
             System.out.println("Error al crear el socket: " + e.getMessage());
         } catch (IOException e) {
+            // Captura y maneja la excepción de IOException, en caso de que ocurra al recibir el datagrama
             System.out.println("Error al recibir el datagrama: " + e.getMessage());
         }
     }

@@ -1,91 +1,130 @@
 package org.example.TCP;
 
 import javax.swing.*;
+import javax.swing.plaf.basic.BasicButtonUI;
 import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
-import java.io.IOException;
-import java.net.Socket;
+import java.io.*;
+import java.net.*;
 
 public class ClienteTCP extends JFrame {
 
     private Socket socket;
     private DataInputStream dis;
     private DataOutputStream dos;
-    private String clientName; // Almacenar el nombre del client11e
+    private String clientName;
+    private boolean isConnected = false; // Estado de conexión del cliente
 
     private JTextArea chatArea;
     private JTextField messageField;
     private JLabel messageStatusIndicator;
+    private JButton disconnectButton;
+    private JButton reconnectButton;
 
     enum MessageStatus {
-        SENT_AND_RECEIVED, SENDING, SERVER_CLOSED
+        SENT_AND_RECEIVED, SENDING, SERVER_CLOSED, DISCONNECTED
     }
 
     public ClienteTCP() {
         setTitle("Cliente TCP");
-        setSize(400, 300);
+        setSize(600, 500);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLocationRelativeTo(null);
 
+        JPanel buttonPanel = new JPanel(new GridLayout(1, 2));
+        buttonPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+
         chatArea = new JTextArea();
         chatArea.setEditable(false);
+        chatArea.setFont(new Font("Arial", Font.PLAIN, 14));
         JScrollPane scrollPane = new JScrollPane(chatArea);
+        scrollPane.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
         add(scrollPane, BorderLayout.CENTER);
 
         JPanel inputPanel = new JPanel(new BorderLayout());
+        inputPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
         messageField = new JTextField();
+        messageField.setFont(new Font("Arial", Font.PLAIN, 14));
         JButton sendButton = new JButton("Enviar");
-        sendButton.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                sendMessage();
-            }
-        });
+        sendButton.addActionListener(e -> sendMessage());
         messageStatusIndicator = new JLabel();
         messageStatusIndicator.setOpaque(true);
-        inputPanel.add(messageStatusIndicator, BorderLayout.WEST);
+        messageStatusIndicator.setBorder(BorderFactory.createEmptyBorder(5, 10, 5, 10));
+
+        JPanel statusPanel = new JPanel(new BorderLayout());
+        statusPanel.add(messageStatusIndicator, BorderLayout.CENTER);
+        statusPanel.add(sendButton, BorderLayout.EAST);
+        inputPanel.add(statusPanel, BorderLayout.EAST);
         inputPanel.add(messageField, BorderLayout.CENTER);
-        inputPanel.add(sendButton, BorderLayout.EAST);
         add(inputPanel, BorderLayout.SOUTH);
+
+        disconnectButton = new JButton("Desconectar");
+        setButtonStyle(disconnectButton, Color.RED); // Cambiar color a rojo
+        disconnectButton.addActionListener(e -> disconnectFromServer());
+        buttonPanel.add(disconnectButton);
+
+        reconnectButton = new JButton("Reconectar");
+        setButtonStyle(reconnectButton, Color.CYAN); // Cambiar color a cyan
+        reconnectButton.addActionListener(e -> reconnectToServer());
+        buttonPanel.add(reconnectButton);
+
+        inputPanel.add(buttonPanel, BorderLayout.WEST);
+
 
         setVisible(true);
 
         connectToServer();
     }
 
+    private void setButtonStyle(JButton button, Color color) {
+        button.setUI(new BasicButtonUI());
+        button.setBorder(BorderFactory.createLineBorder(Color.BLACK));
+        button.setBackground(color); // Establecer el color
+        button.setForeground(UIManager.getColor("Button.foreground"));
+        button.setFocusPainted(false);
+    }
+
+
     private void connectToServer() {
-        JPanel panel = new JPanel(new GridLayout(3, 2));
-        JTextField serverAddressField = new JTextField();
-        JTextField clientNameField = new JTextField();
-        panel.add(new JLabel("Dirección IP del servidor:"));
-        panel.add(serverAddressField);
-        panel.add(new JLabel("Nombre del cliente:"));
-        panel.add(clientNameField);
-        int result = JOptionPane.showConfirmDialog(null, panel, "Conectar al servidor", JOptionPane.OK_CANCEL_OPTION);
-        if (result == JOptionPane.OK_OPTION) {
-            String serverAddress = serverAddressField.getText();
-            clientName = clientNameField.getText(); // Almacenar el nombre del cliente
-            try {
-                socket = new Socket(serverAddress, 5001);
-                dis = new DataInputStream(socket.getInputStream());
-                dos = new DataOutputStream(socket.getOutputStream());
-                dos.writeUTF(clientName); // Enviar el nombre del cliente al servidor
+        try {
+            if (socket == null || socket.isClosed()) {
+                JPanel panel = new JPanel(new GridLayout(3, 2));
+                JTextField serverAddressField = new JTextField();
+                JTextField clientNameField = new JTextField();
+                panel.add(new JLabel("Dirección IP del servidor:"));
+                panel.add(serverAddressField);
+                panel.add(new JLabel("Nombre del cliente:"));
+                panel.add(clientNameField);
+                int result = JOptionPane.showConfirmDialog(null, panel, "Conectar al servidor", JOptionPane.OK_CANCEL_OPTION);
+                if (result == JOptionPane.OK_OPTION) {
+                    String serverAddress = serverAddressField.getText();
+                    clientName = clientNameField.getText();
+                    socket = new Socket(serverAddress, 5004);
+                    dis = new DataInputStream(socket.getInputStream());
+                    dos = new DataOutputStream(socket.getOutputStream());
+                    dos.writeUTF(clientName);
+                    isConnected = true; // Marcar como conectado
+                    receiveMessages();
+                } else {
+                    showErrorAndExit("Conexión cancelada por el usuario.");
+                }
+            } else {
+                dos.writeUTF("Reconectar");
+                updateMessageStatusIndicator(MessageStatus.SENT_AND_RECEIVED);
                 receiveMessages();
-            } catch (IOException e) {
-                showErrorAndExit("Error 504: No se puede conectar con el servidor.");
-                e.printStackTrace();
             }
-        } else {
-            showErrorAndExit("Conexión cancelada por el usuario.");
+        } catch (IOException e) {
+            showErrorAndExit("Error al reconectar con el servidor.");
+            e.printStackTrace();
         }
     }
 
     private void sendMessage() {
+        if (!isConnected) {
+            JOptionPane.showMessageDialog(this, "No estás conectado al servidor.", "Error", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
         String message = messageField.getText();
-        showMessage(clientName + ": " + message); // Mostrar el nombre del cliente junto con el mensaje enviado
+        showMessage(clientName + ": " + message);
         updateMessageStatusIndicator(MessageStatus.SENDING);
         try {
             dos.writeUTF(message);
@@ -104,70 +143,88 @@ public class ClienteTCP extends JFrame {
     }
 
     private void receiveMessages() {
-        Thread receiveThread = new Thread(new Runnable() {
-            @Override
-            public void run() {
-                try {
-                    while (true) {
-                        String message = dis.readUTF();
-                        showMessage(message); // Mostrar mensaje recibido del servidor
-                    }
-                } catch (IOException e) {
-                    showErrorAndExit("Error 504: No se puede conectar con el servidor.");
-                    e.printStackTrace();
+        Thread receiveThread = new Thread(() -> {
+            try {
+                while (true) {
+                    String message = dis.readUTF();
+                    showMessage(message);
                 }
+            } catch (IOException e) {
+                showErrorAndExit("Error 504: No se puede conectar con el servidor.");
+                e.printStackTrace();
             }
         });
         receiveThread.start();
     }
 
+    private void disconnectFromServer() {
+        try {
+            dos.writeUTF("Desconectar");
+            updateMessageStatusIndicator(MessageStatus.DISCONNECTED);
+            isConnected = false; // Marcar como desconectado
+        } catch (IOException e) {
+            showErrorAndExit("Error al desconectar del servidor.");
+            e.printStackTrace();
+        }
+    }
+
+    private void reconnectToServer() {
+        try {
+            dos.writeUTF("Reconectar");
+            updateMessageStatusIndicator(MessageStatus.SENT_AND_RECEIVED);
+            isConnected = true; // Marcar como conectado
+        } catch (IOException e) {
+            showErrorAndExit("Error al reconectar con el servidor.");
+            e.printStackTrace();
+        }
+    }
+
+    private void terminateConnection() {
+        try {
+            dos.writeUTF("Terminar");
+            socket.close();
+            System.exit(0);
+        } catch (IOException e) {
+            showErrorAndExit("Error al terminar la conexión con el servidor.");
+            e.printStackTrace();
+        }
+    }
+
     private void showMessage(String message) {
-        SwingUtilities.invokeLater(new Runnable() {
-            @Override
-            public void run() {
-                chatArea.append(message + "\n");
-            }
-        });
+        SwingUtilities.invokeLater(() -> chatArea.append(message + "\n"));
     }
 
     private void showErrorAndExit(String errorMessage) {
-        SwingUtilities.invokeLater(new Runnable() {
-            @Override
-            public void run() {
-                JOptionPane.showMessageDialog(ClienteTCP.this, errorMessage, "Error", JOptionPane.ERROR_MESSAGE);
-                System.exit(1);
-            }
+        SwingUtilities.invokeLater(() -> {
+            JOptionPane.showMessageDialog(ClienteTCP.this, errorMessage, "Error", JOptionPane.ERROR_MESSAGE);
+            System.exit(1);
         });
     }
 
     private void updateMessageStatusIndicator(MessageStatus status) {
-        SwingUtilities.invokeLater(new Runnable() {
-            @Override
-            public void run() {
-                switch (status) {
-                    case SENT_AND_RECEIVED:
-                        messageStatusIndicator.setBackground(Color.GREEN);
-                        messageStatusIndicator.setText("Enviado y recibido");
-                        break;
-                    case SENDING:
-                        messageStatusIndicator.setBackground(Color.YELLOW);
-                        messageStatusIndicator.setText("Se está enviando");
-                        break;
-                    case SERVER_CLOSED:
-                        messageStatusIndicator.setBackground(Color.RED);
-                        messageStatusIndicator.setText("Se cerró el servidor");
-                        break;
-                }
+        SwingUtilities.invokeLater(() -> {
+            switch (status) {
+                case SENT_AND_RECEIVED:
+                    messageStatusIndicator.setBackground(new Color(46, 204, 113));
+                    messageStatusIndicator.setText("Enviado y recibido");
+                    break;
+                case SENDING:
+                    messageStatusIndicator.setBackground(new Color(241, 196, 15));
+                    messageStatusIndicator.setText("Se está enviando");
+                    break;
+                case SERVER_CLOSED:
+                    messageStatusIndicator.setBackground(new Color(231, 76, 60));
+                    messageStatusIndicator.setText("Se cerró el servidor");
+                    break;
+                case DISCONNECTED:
+                    messageStatusIndicator.setBackground(new Color(52, 152, 219));
+                    messageStatusIndicator.setText("Desconectado");
+                    break;
             }
         });
     }
 
     public static void main(String[] args) {
-        SwingUtilities.invokeLater(new Runnable() {
-            @Override
-            public void run() {
-                new ClienteTCP();
-            }
-        });
+        SwingUtilities.invokeLater(() -> new ClienteTCP());
     }
 }
