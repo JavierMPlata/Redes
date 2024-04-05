@@ -14,7 +14,7 @@ public class ClienteTCP extends JFrame {
     private Socket socket;
     private DataInputStream dis;
     private DataOutputStream dos;
-    private String clientName; // Almacenar el nombre del cliente
+    private String clientName; // Almacenar el nombre del client11e
 
     private JTextArea chatArea;
     private JTextField messageField;
