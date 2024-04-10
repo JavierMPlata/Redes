@@ -1,4 +1,5 @@
 # Servidor TCP y UDP en Java
+# Calculadora matemática discreta
 Este proyecto contiene implementaciones de servidores TCP y UDP en Java. Ambos servidores están diseñados para recibir mensajes de clientes y mostrar información sobre las conexiones entrantes.
 ## Servidor TCP
 
