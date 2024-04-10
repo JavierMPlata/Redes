@@ -7,15 +7,14 @@ Este proyecto contiene implementaciones de servidores TCP y UDP en Java. Ambos s
 El servidor TCP se encuentra en el paquete `org.example.TCP` y ofrece las siguientes funcionalidades:
 
 - Escucha en el puerto 5004 para recibir mensajes de clientes TCP.
-- Muestra información detallada sobre cada cliente que se conecta, incluyendo el nombre del cliente, el mensaje enviado y el estado de la conexión.
-- Permite enviar mensajes desde el servidor a los clientes TCP.
-- Proporciona botones para desconectar y reconectar clientes, así como un botón para enviar mensajes.
+- Muestra información detallada sobre cada cliente que se conecta, incluyendo el nombre, el mensaje enviado.
+- Proporciona botones para desconectar y reconectar, así como un botón para enviar mensajes.
 
 **Para ejecutar el servidor TCP:**
 
 1. Ejecute el archivo `ClienteTCP.java` para iniciar el cliente TCP.
 2. Complete la dirección IP del servidor y el nombre del cliente cuando se le solicite.
-3. Utilice la interfaz gráfica para enviar y recibir mensajes, desconectar/reconectar clientes y controlar la conexión.
+3. Utilice la interfaz gráfica para enviar y recibir mensajes, desconectar/reconectar y controlar la conexión.
 
 ## Servidor UDP
 
@@ -33,4 +32,4 @@ El servidor UDP se encuentra en el paquete `org.example.UDP` y ofrece las siguie
 ## Notas adicionales
 
 - Ambos servidores están diseñados para propósitos educativos y pueden ser personalizados según sea necesario.
-- Siempre asegúrese de cerrar correctamente los sockets al finalizar el uso para liberar recursos.
+- Siempre se debe asegurar de cerrar correctamente los sockets al finalizar el uso para liberar recursos.
