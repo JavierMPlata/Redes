@@ -1,7 +1,5 @@
 # Servidor TCP y UDP en Java
-
 Este proyecto contiene implementaciones de servidores TCP y UDP en Java. Ambos servidores están diseñados para recibir mensajes de clientes y mostrar información sobre las conexiones entrantes.
-
 ## Servidor TCP
 
 El servidor TCP se encuentra en el paquete `org.example.TCP` y ofrece las siguientes funcionalidades:
