@@ -8,14 +8,17 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 
+// Clase principal del servidor TCP
 public class ServidorTCP {
 
+    // Clase interna para representar a un cliente
     private static class Cliente {
-        String nombre;
-        DataOutputStream dos;
-        boolean conectado;
-        List<String> mensajesPendientes = new ArrayList<String>();
+        String nombre; // Nombre del cliente
+        DataOutputStream dos; // Stream para enviar datos al cliente
+        boolean conectado; // Estado de conexión del cliente
+        List<String> mensajesPendientes = new ArrayList<String>(); // Lista de mensajes pendientes para el cliente
 
+        // Constructor de la clase Cliente
         Cliente(String nombre, DataOutputStream dos) {
             this.nombre = nombre;
             this.dos = dos;
@@ -23,13 +26,16 @@ public class ServidorTCP {
         }
     }
 
+    // Constante para el nombre del archivo de clientes
     private static final String CLIENTS_FILE = "clientes.txt";
 
+    // Clase interna para representar un mensaje
     private static class Mensaje {
-        String nombreCliente;
-        String contenido;
-        boolean enviado;
+        String nombreCliente; // Nombre del cliente que envió el mensaje
+        String contenido; // Contenido del mensaje
+        boolean enviado; // Estado de envío del mensaje
 
+        // Constructor de la clase Mensaje
         Mensaje(String nombreCliente, String contenido) {
             this.nombreCliente = nombreCliente;
             this.contenido = contenido;
@@ -37,41 +43,53 @@ public class ServidorTCP {
         }
     }
 
+    // Listas para almacenar los clientes y los mensajes
     private static List<Cliente> clientes = new ArrayList<>();
     private static List<Mensaje> mensajes = new ArrayList<>();
 
+    // Método principal del servidor
     public static void main(String[] args) throws Exception {
+        // Creación del socket del servidor en el puerto 5004
         ServerSocket server = new ServerSocket(5004);
 
+        // Inicio del servidor
         System.out.println("Iniciando el servidor...");
 
+        // Bucle principal del servidor
         while (true) {
             System.out.println("Servidor iniciado, esperando clientes...");
 
+            // Aceptación de una conexión de un cliente
             Socket socket = server.accept();
 
+            // Creación de los streams de entrada y salida
             DataInputStream dis = new DataInputStream(socket.getInputStream());
             DataOutputStream dos = new DataOutputStream(socket.getOutputStream());
 
+            // Lectura del nombre del cliente y creación del objeto Cliente
             String clientName = dis.readUTF();
             Cliente cliente = new Cliente(clientName, dos);
             clientes.add(cliente);
 
-            // Enviar mensajes pendientes al cliente reconectado
+            // Envío de mensajes pendientes al cliente reconectado
             enviarMensajesPendientes(cliente);
 
+            // Creación y inicio del hilo para recibir mensajes del cliente
             Thread receiveFromClientThread = new Thread(() -> {
                 while (true) {
                     try {
+                        // Recepción y procesamiento del mensaje del cliente
                         String clientMessage = dis.readUTF();
                         System.out.println("Mensaje recibido desde el cliente (" + clientName + "): " + clientMessage);
                         if (clientMessage.equals("Terminar")) {
+                            // Procesamiento del mensaje de terminación
                             System.out.println("Terminando la conexión con el cliente...");
                             // No cerrar el socket, solo actualizar el estado del cliente
                             actualizarEstadoCliente(cliente, false);
                             Files.deleteIfExists(Paths.get(CLIENTS_FILE));
                             break; // Salir del bucle para dejar de escuchar a este cliente
                         } else if (clientMessage.equals("Desconectar")) {
+                            // Procesamiento del mensaje de desconexión
                             System.out.println("Desconectando al cliente...");
                             dos.writeUTF("Desconectado");
                             // Actualizar estado del cliente a desconectado
@@ -82,6 +100,7 @@ public class ServidorTCP {
                                 System.out.println("Error al escribir en el archivo: " + e.getMessage());
                             }
                         } else if (clientMessage.equals("Reconectar")) {
+                            // Procesamiento del mensaje de reconexión
                             System.out.println("Reconectando al cliente...");
                             // Actualizar estado del cliente a conectado
                             actualizarEstadoCliente(cliente, true);
@@ -105,10 +124,12 @@ public class ServidorTCP {
         }
     }
 
+    // Método para actualizar el estado de conexión de un cliente
     private static void actualizarEstadoCliente(Cliente cliente, boolean conectado) {
         cliente.conectado = conectado;
     }
 
+    // Método para enviar los mensajes pendientes a un cliente
     private static void enviarMensajesPendientes(Cliente cliente) {
         for (String mensaje : cliente.mensajesPendientes) {
             try {
@@ -121,6 +142,7 @@ public class ServidorTCP {
         cliente.mensajesPendientes.clear();
     }
 
+    // Método para enviar un mensaje a los otros clientes
     private static void enviarMensajeOtrosClientes(Cliente senderCliente, String senderName, String message) {
         for (Cliente cliente : clientes) {
             if (cliente != senderCliente) {
@@ -134,6 +156,7 @@ public class ServidorTCP {
         }
     }
 
+    // Método para enviar un mensaje a un cliente
     private static void enviarMensaje(Cliente cliente, Mensaje mensaje) {
         try {
             cliente.dos.writeUTF(mensaje.nombreCliente + ": " + mensaje.contenido);
